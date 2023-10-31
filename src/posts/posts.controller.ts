@@ -13,7 +13,7 @@ import { PostsService } from './posts.service';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(private postsService: PostsService) {}
 
   @Get()
   getAllPosts() {
@@ -32,7 +32,7 @@ export class PostsController {
 
   @Put(':id')
   async replacePost(@Param('id') id: string, @Body() post: UpdatePostDto) {
-    return this.postsService.replacePost(Number(id), post);
+    return this.postsService.updatePost(Number(id), post);
   }
 
   @Delete(':id')

@@ -1,0 +1,27 @@
+version: '3.8'
+services:
+  postgres:
+    container_name: postgres
+    image: postgres
+    restart: always
+    ports:
+      - '5432:5432'
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+    env_file:
+      - docker.env
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - '8080:80'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    env_file:
+      - docker.env
+
+volumes:
+  local_pgdata:
+  pgadmin-data:
