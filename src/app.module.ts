@@ -30,7 +30,7 @@ import { UsersModule } from './users/uses.module';
     AuthModule,
     UsersModule,
   ],
-  controllers: [AppController, PostsController],
-  providers: [AppService, PostsService],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}

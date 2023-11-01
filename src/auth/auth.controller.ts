@@ -7,6 +7,9 @@ import {
   UseGuards,
   Res,
   Get,
+  UseInterceptors,
+  ClassSerializerInterceptor,
+  SerializeOptions,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -16,6 +19,9 @@ import { LocalAuthenticationGuard } from './localAuthentication.guard';
 import { JwtAuthenticationGuard } from './jwt-authentication.guard';
 
 @Controller('auth')
+@SerializeOptions({
+  strategy: 'exposeAll',
+})
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -27,12 +33,12 @@ export class AuthController {
   @HttpCode(200)
   @UseGuards(LocalAuthenticationGuard)
   @Post('login')
-  async logIn(@Req() request: RequestWithUser, @Res() response: Response) {
+  async logIn(@Req() request: RequestWithUser) {
     const { user } = request;
     const cookie = this.authService.getCookieWithJwtToken(user.id);
-    response.setHeader('Set-Cookie', cookie);
+    request.res.setHeader('Set-Cookie', cookie);
     user.password = undefined;
-    return response.send(user);
+    return user;
   }
 
   @UseGuards(JwtAuthenticationGuard)
