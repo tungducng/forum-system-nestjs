@@ -9,7 +9,6 @@ import {
   Get,
   UseInterceptors,
   ClassSerializerInterceptor,
-  SerializeOptions,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
@@ -19,9 +18,7 @@ import { LocalAuthenticationGuard } from './localAuthentication.guard';
 import { JwtAuthenticationGuard } from './jwt-authentication.guard';
 
 @Controller('auth')
-@SerializeOptions({
-  strategy: 'exposeAll',
-})
+@UseInterceptors(ClassSerializerInterceptor)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 

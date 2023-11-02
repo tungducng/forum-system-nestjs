@@ -1,10 +1,11 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { Post } from './post.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository, UpdateResult } from 'typeorm';
+import { Repository } from 'typeorm';
 import { PostNotFoundException } from './exceptions/postNotFound.exception';
+import { User } from 'src/users/user.entity';
 
 @Injectable()
 export class PostsService {
@@ -14,7 +15,7 @@ export class PostsService {
   ) {}
 
   getAllPosts(): Promise<Post[]> {
-    return this.postsRepository.find();
+    return this.postsRepository.find({ relations: ['author'] });
   }
 
   async getPostById(id: number): Promise<Post> {
@@ -22,6 +23,7 @@ export class PostsService {
       where: {
         id,
       },
+      relations: ['author'],
     });
     if (post) {
       return post;
@@ -29,21 +31,23 @@ export class PostsService {
     throw new PostNotFoundException(id);
   }
 
-  async createPost(post: CreatePostDto) {
-    try {
-      const res = await this.postsRepository.save({
-        ...post,
-      });
-
-      return await this.postsRepository.findOneBy({ id: res.id });
-    } catch (error) {
-      throw new HttpException('Can not create post', HttpStatus.BAD_REQUEST);
-    }
+  async createPost(post: CreatePostDto, user: User) {
+    const newPost = await this.postsRepository.create({
+      ...post,
+      author: user,
+    });
+    await this.postsRepository.save(newPost);
+    return newPost;
   }
 
   async updatePost(id: number, post: UpdatePostDto): Promise<Post> {
     await this.postsRepository.update(id, post);
-    const updatedPost = await this.postsRepository.findOneBy({ id });
+    const updatedPost = await this.postsRepository.findOne({
+      where: {
+        id,
+      },
+      relations: ['author'],
+    });
     if (updatedPost) {
       return updatedPost;
     }

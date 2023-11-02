@@ -1,20 +1,25 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Delete,
   Get,
   Param,
   Post,
   Put,
+  Req,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 import { JwtAuthenticationGuard } from 'src/auth/jwt-authentication.guard';
 import { FindOneParams } from 'src/utils/findOneParams';
+import { RequestWithUser } from 'src/auth/requestWithUser.interface';
 
 @Controller('posts')
+@UseInterceptors(ClassSerializerInterceptor)
 export class PostsController {
   constructor(private postsService: PostsService) {}
 
@@ -28,10 +33,10 @@ export class PostsController {
     return this.postsService.getPostById(Number(id));
   }
 
-  @UseGuards(JwtAuthenticationGuard)
   @Post()
-  async createPost(@Body() post: CreatePostDto) {
-    return this.postsService.createPost(post);
+  @UseGuards(JwtAuthenticationGuard)
+  async createPost(@Body() post: CreatePostDto, @Req() req: RequestWithUser) {
+    return this.postsService.createPost(post, req.user);
   }
 
   @Put(':id')
