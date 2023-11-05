@@ -3,19 +3,25 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { Post } from './post.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { PostNotFoundException } from './exceptions/postNotFound.exception';
 import { User } from 'src/users/user.entity';
+import { PostsSearchService } from './postsSearch.service';
 
 @Injectable()
 export class PostsService {
   constructor(
     @InjectRepository(Post)
     private postsRepository: Repository<Post>,
+    private postsSearchService: PostsSearchService,
   ) {}
 
-  getAllPosts(): Promise<Post[]> {
-    return this.postsRepository.find({ relations: ['author'] });
+  async getAllPosts() {
+    const [list, count] = await this.postsRepository.findAndCount();
+    return {
+      count,
+      list,
+    };
   }
 
   async getPostById(id: number): Promise<Post> {
@@ -23,7 +29,9 @@ export class PostsService {
       where: {
         id,
       },
-      relations: ['author'],
+      relations: {
+        author: true,
+      },
     });
     if (post) {
       return post;
@@ -36,8 +44,9 @@ export class PostsService {
       ...post,
       author: user,
     });
-    await this.postsRepository.save(newPost);
-    return newPost;
+    const savedPost = await this.postsRepository.save(newPost);
+    await this.postsSearchService.indexPost(savedPost);
+    return savedPost;
   }
 
   async updatePost(id: number, post: UpdatePostDto): Promise<Post> {
@@ -46,9 +55,12 @@ export class PostsService {
       where: {
         id,
       },
-      relations: ['author'],
+      relations: {
+        author: true,
+      },
     });
     if (updatedPost) {
+      await this.postsSearchService.update(updatedPost);
       return updatedPost;
     }
     throw new PostNotFoundException(id);
@@ -59,5 +71,21 @@ export class PostsService {
     if (!deleteResponse.affected) {
       throw new PostNotFoundException(id);
     }
+    await this.postsSearchService.remove(id);
+  }
+
+  async searchForPosts(text: string) {
+    const results = await this.postsSearchService.search(text);
+    const ids = results.map((result) => result.id);
+    if (!ids.length) {
+      return [];
+    }
+    const [list, count] = await this.postsRepository.findAndCount({
+      where: { id: In(ids) },
+    });
+    return {
+      count,
+      list,
+    };
   }
 }
