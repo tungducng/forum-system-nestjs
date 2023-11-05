@@ -42,4 +42,10 @@ export class User {
     nullable: true,
   })
   public avatar?: PublicFile;
+
+  @Column({
+    nullable: true,
+  })
+  @Exclude()
+  public currentHashedRefreshToken?: string;
 }

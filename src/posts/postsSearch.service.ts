@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 import { Post } from './post.entity';
-import { Script, SearchTotalHits } from '@elastic/elasticsearch/lib/api/types';
+import { Script } from '@elastic/elasticsearch/lib/api/types';
 
 interface PostSearchBody {
   id: number;
@@ -21,8 +21,8 @@ export class PostsSearchService {
       index: this.index,
       body: {
         query: {
-          multi_match: {
-            query: text,
+          query_string: {
+            query: `*${text}*`,
             fields: ['title', 'content'],
           },
         },
