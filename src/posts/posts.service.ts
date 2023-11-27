@@ -3,10 +3,11 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { Post } from './post.entity';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { FindManyOptions, In, MoreThan, Repository } from 'typeorm';
 import { PostNotFoundException } from './exceptions/postNotFound.exception';
 import { User } from 'src/users/user.entity';
 import { PostsSearchService } from './postsSearch.service';
+import PostSearchBody from './types/postSearchBody.interface';
 
 @Injectable()
 export class PostsService {
@@ -16,11 +17,35 @@ export class PostsService {
     private postsSearchService: PostsSearchService,
   ) {}
 
-  async getAllPosts() {
-    const [list, count] = await this.postsRepository.findAndCount();
+  // async getAllPosts() {
+  //   const [list, count] = await this.postsRepository.findAndCount();
+  //   return {
+  //     count,
+  //     list,
+  //   };
+  // }
+
+  async getAllPosts(offset?: number, limit?: number, startId?: number) {
+    const where: FindManyOptions<Post>['where'] = {};
+    let separateCount = 0;
+    if (startId) {
+      where.id = MoreThan(startId);
+      separateCount = await this.postsRepository.count();
+    }
+
+    const [items, count] = await this.postsRepository.findAndCount({
+      where,
+      relations: ['author'],
+      order: {
+        id: 'ASC',
+      },
+      skip: offset,
+      take: limit,
+    });
+
     return {
-      count,
-      list,
+      count: count,
+      items,
     };
   }
 
@@ -74,18 +99,46 @@ export class PostsService {
     await this.postsSearchService.remove(id);
   }
 
-  async searchForPosts(text: string) {
-    const results = await this.postsSearchService.search(text);
+  // async searchForPosts(text: string) {
+  //   const results = await this.postsSearchService.search(text);
+  //   const ids = results.map((result) => result.id);
+  //   if (!ids.length) {
+  //     return [];
+  //   }
+  //   const [list, count] = await this.postsRepository.findAndCount({
+  //     where: { id: In(ids) },
+  //   });
+  //   return {
+  //     count,
+  //     list,
+  //   };
+  // }
+
+  async searchForPosts(
+    text: string,
+    offset?: number,
+    limit?: number,
+    startId?: number,
+  ) {
+    const { results, count } = (await this.postsSearchService.search(
+      text,
+      offset,
+      limit,
+      startId,
+    )) as { results: PostSearchBody[]; count: number };
     const ids = results.map((result) => result.id);
-    if (!ids.length) {
-      return [];
+    if (!results.length) {
+      return {
+        count,
+        items: [],
+      };
     }
-    const [list, count] = await this.postsRepository.findAndCount({
+    const items = await this.postsRepository.find({
       where: { id: In(ids) },
     });
     return {
       count,
-      list,
+      items,
     };
   }
 }

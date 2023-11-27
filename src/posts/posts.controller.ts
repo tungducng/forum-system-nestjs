@@ -1,3 +1,6 @@
+import { RequestWithUser } from './../auth/requestWithUser.interface';
+import { FindOneParams } from './../utils/findOneParams';
+import { PaginationParams } from './../utils/types/paginationParams';
 import {
   Body,
   ClassSerializerInterceptor,
@@ -16,20 +19,29 @@ import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { PostsService } from './posts.service';
 import { JwtAuthenticationGuard } from 'src/auth/jwt-authentication.guard';
-import { FindOneParams } from 'src/utils/findOneParams';
-import { RequestWithUser } from 'src/auth/requestWithUser.interface';
 
 @Controller('posts')
 @UseInterceptors(ClassSerializerInterceptor)
 export class PostsController {
   constructor(private postsService: PostsService) {}
 
+  // @Get()
+  // getAllPosts(@Query('search') search: string) {
+  //   if (search) {
+  //     return this.postsService.searchForPosts(search);
+  //   }
+  //   return this.postsService.getAllPosts();
+  // }
+
   @Get()
-  getAllPosts(@Query('search') search: string) {
+  async getPosts(
+    @Query('search') search: string,
+    @Query() { offset, limit, startId }: PaginationParams,
+  ) {
     if (search) {
-      return this.postsService.searchForPosts(search);
+      return this.postsService.searchForPosts(search, offset, limit, startId);
     }
-    return this.postsService.getAllPosts();
+    return this.postsService.getAllPosts(offset, limit, startId);
   }
 
   @Get(':id')
