@@ -9,6 +9,7 @@ import {
   OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
 import { Address } from './address.entity';
 
 @Entity()
